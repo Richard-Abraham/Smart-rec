@@ -4,21 +4,25 @@ import uuid
 from django.conf import settings
 import asyncio
 from collections import deque
-from supabase import create_client
+from supabase import create_client, Client
 from models.attendance import Attendance
 
 class AttendanceService:
-    def __init__(self):
-        self._updates_queue = deque(maxlen=100)
-        self.supabase = create_client(
+    _updates_queue = deque(maxlen=100)
+
+    @classmethod
+    async def _get_client(cls) -> Client:
+        """Get or create Supabase client instance"""
+        return create_client(
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
         )
 
     @classmethod
     async def get_today_records(cls) -> List[Dict]:
+        supabase = await cls._get_client()
         today = datetime.now().date().isoformat()
-        response = await cls.supabase.table('attendance')\
+        response = await supabase.table('attendance')\
             .select("""
                 *,
                 profiles (
@@ -35,6 +39,7 @@ class AttendanceService:
     @classmethod
     async def record_attendance(cls, user_id: str) -> Optional[Dict]:
         try:
+            supabase = await cls._get_client()
             attendance = Attendance(
                 id=str(uuid.uuid4()),
                 user_id=user_id,
@@ -43,20 +48,22 @@ class AttendanceService:
                 verification_method='face'
             )
 
-            response = await cls.supabase.table('attendance').insert(attendance.dict()).execute()
+            response = await supabase.table('attendance').insert(attendance.dict()).execute()
             return response.data[0] if response.data else None
 
         except Exception as e:
             raise Exception(f"Error recording attendance: {str(e)}")
 
-    def get_updates(self) -> Optional[Dict]:
-        return self._updates_queue.popleft() if self._updates_queue else None
+    @classmethod
+    def get_updates(cls) -> Optional[Dict]:
+        return cls._updates_queue.popleft() if cls._updates_queue else None
 
     @classmethod
     async def get_attendance_report(cls, date: str) -> List[Dict]:
         """Get attendance report for a specific date"""
         try:
-            response = await cls.supabase.table('attendance')\
+            supabase = await cls._get_client()
+            response = await supabase.table('attendance')\
                 .select("""
                     *,
                     users (

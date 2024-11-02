@@ -1,7 +1,7 @@
 import face_recognition
 import numpy as np
 from django.conf import settings
-from supabase import create_client
+from supabase import create_client, Client
 import cv2
 from typing import Optional, Dict
 import base64
@@ -9,18 +9,21 @@ from models.face_encoding import FaceEncoding
 from uuid import UUID
 
 class FaceRecognitionService:
-    def __init__(self):
-        self.known_face_encodings: Dict[UUID, np.ndarray] = {}
-        self.supabase = create_client(
+    known_face_encodings: Dict[UUID, np.ndarray] = {}
+
+    @classmethod
+    async def _get_client(cls) -> Client:
+        """Get or create Supabase client instance"""
+        return create_client(
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
         )
-        self.load_face_encodings()
-    
+
     @classmethod
     async def load_face_encodings(cls):
         """Load face encodings from Supabase"""
-        response = await cls.supabase.table('face_encodings')\
+        supabase = await cls._get_client()
+        response = await supabase.table('face_encodings')\
             .select('*')\
             .eq('is_active', True)\
             .execute()
@@ -33,6 +36,7 @@ class FaceRecognitionService:
     @classmethod
     async def register_face(cls, body: dict) -> Dict:
         try:
+            supabase = await cls._get_client()
             user_id = UUID(body['user_id'])
             image_data = body['image']  # Base64 encoded image
             
@@ -57,12 +61,12 @@ class FaceRecognitionService:
             encoding = FaceEncoding.from_numpy(user_id, face_encoding, photo_url)
             
             # Store in database
-            response = await cls.supabase.table('face_encodings')\
+            response = await supabase.table('face_encodings')\
                 .upsert(encoding.dict())\
                 .execute()
 
             # Update user profile with photo URL
-            await cls.supabase.table('users')\
+            await supabase.table('users')\
                 .update({'photo_url': photo_url})\
                 .eq('id', str(user_id))\
                 .execute()

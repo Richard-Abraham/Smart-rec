@@ -1,34 +1,36 @@
 from functools import wraps
-from typing import Callable, Any
 from django.http import JsonResponse
 import json
-from aiohttp import web
+from asgiref.sync import iscoroutinefunction
 
-def create_response(status: int, message: str, data: Any = None) -> JsonResponse:
-    return JsonResponse({
-        'status': status,
-        'message': message,
-        'data': data if data is not None else {}
-    }, status=status)
-
-def handle_request(func: Callable) -> Callable:
-    @wraps(func)
-    async def wrapper(request: web.Request, *args: Any, **kwargs: Any) -> JsonResponse:
+def handle_request(view_func):
+    """Decorator to handle request processing and response formatting"""
+    @wraps(view_func)
+    async def wrapper(request, *args, **kwargs):
         try:
-            # Parse request body for POST requests
-            if request.method == 'POST':
-                body = await request.json() if request.content_type == 'application/json' else await request.post()
-                result = await func(body, *args, **kwargs)
-            else:
-                result = await func(*args, **kwargs)
+            # For POST/PUT/PATCH requests, parse JSON body
+            if request.method in ['POST', 'PUT', 'PATCH']:
+                body = json.loads(request.body)
+                kwargs['body'] = body
             
-            return create_response(200, 'Success', result)
+            response = await view_func(request, *args, **kwargs)
+            return JsonResponse({
+                'status': 200,
+                'message': 'Success',
+                'data': response
+            })
             
         except json.JSONDecodeError:
-            return create_response(400, 'Invalid JSON format')
-        except KeyError as e:
-            return create_response(400, f'Missing required field: {str(e)}')
+            return JsonResponse({
+                'status': 400,
+                'message': 'Invalid JSON in request body',
+                'data': {}
+            }, status=400)
         except Exception as e:
-            return create_response(500, str(e))
+            return JsonResponse({
+                'status': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
     
     return wrapper

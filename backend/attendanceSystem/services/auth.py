@@ -6,54 +6,59 @@ from datetime import datetime
 import jwt
 from services.storage import StorageService
 from models.user import User
+from services.settings import get_env_settings
 
 class AuthService:
-    def __init__(self):
-        self.supabase: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_KEY
-        )
-        self.storage = StorageService()
-    
     @classmethod
-    async def sign_up(cls, body: dict) -> Dict:
-        """
-        Register a new user with Supabase and create custom user profile
-        """
+    async def _get_client(cls) -> Client:
+        """Get or create Supabase client instance"""
+        env_settings = get_env_settings()
+        return create_client(
+            env_settings['SUPABASE_URL'],
+            env_settings['SUPABASE_KEY']
+        )
+
+    @classmethod
+    async def sign_up(cls, request_data: dict) -> Dict:
+        """Register a new user with Supabase and create custom user profile"""
         try:
+            supabase = await cls._get_client()
+            
             # Create auth user
-            auth_response = await cls.supabase.auth.sign_up({
-                "email": body["email"],
-                "password": body["password"]
+            auth_response = await supabase.auth.sign_up({
+                "email": request_data["email"],
+                "password": request_data["password"]
             })
 
             if auth_response.user:
-                user_id = str(uuid.uuid4())
+                # Handle photo upload if provided
                 photo_url = None
-
-                # Upload photo if provided
-                if 'photo' in body:
-                    photo_url = await cls.storage.upload_photo(user_id, body['photo'])
+                if "photo" in request_data:
+                    photo_url = await StorageService.upload_photo(
+                        str(auth_response.user.id), 
+                        request_data["photo"]
+                    )
 
                 # Create user profile
                 user = User(
-                    id=user_id,
-                    first_name=body["first_name"],
-                    last_name=body["last_name"],
+                    id=auth_response.user.id,  # Use Supabase auth user ID
+                    first_name=request_data["first_name"],
+                    last_name=request_data["last_name"],
                     photo_url=photo_url,
                     created_at=datetime.utcnow()
                 )
 
-                profile_response = await cls.supabase.table("users").insert(user.dict()).execute()
+                profile_response = await supabase.table("users").insert(user.dict()).execute()
 
                 return {
                     "user": auth_response.user,
+                    "access_token": auth_response.session.access_token,
                     "profile": profile_response.data[0] if profile_response.data else None
                 }
 
             raise Exception("Failed to create user")
         except Exception as e:
-            raise Exception(f"Sign up failed: {str(e)}") 
+            raise Exception(f"Sign up failed: {str(e)}")
 
     @classmethod
     async def sign_in(cls, body: dict) -> Dict:
@@ -76,6 +81,7 @@ class AuthService:
 
                 return {
                     "user": auth_response.user,
+                    "access_token": auth_response.session.access_token,
                     "profile": profile_response.data if profile_response.data else None,
                     "session": auth_response.session
                 }
