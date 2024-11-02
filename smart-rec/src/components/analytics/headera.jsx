@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu, Bell, User } from 'lucide-react';
 
-export function Header() {
+export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">

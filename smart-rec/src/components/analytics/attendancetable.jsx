@@ -1,11 +1,6 @@
-import React from 'react';
-import type { AttendanceRecord, User } from '../types';
+import Image from 'next/image';
 
-interface AttendanceTableProps {
-  records: (AttendanceRecord & { user: User })[];
-}
-
-export function AttendanceTable({ records }: AttendanceTableProps) {
+export default function AttendanceTable({ records }) {
   return (
     <div className="mt-8 flow-root">
       <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -25,7 +20,7 @@ export function AttendanceTable({ records }: AttendanceTableProps) {
                 <tr key={record.id}>
                   <td className="whitespace-nowrap px-3 py-4">
                     <div className="flex items-center">
-                      <img className="h-10 w-10 rounded-full" src={record.user.photoUrl} alt="" />
+                      <Image className="h-10 w-10 rounded-full" src={record.user.photoUrl} alt="" />
                       <div className="ml-4">
                         <div className="font-medium text-gray-900">{record.user.name}</div>
                         <div className="text-gray-500">{record.user.department}</div>

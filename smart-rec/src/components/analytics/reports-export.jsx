@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns"
 
 export default function ReportsExport() {
-  const [date, setDate] = useState<Date>()
+  const [date, setDate] = useState("")
   const [reportType, setReportType] = useState('')
 
   const handleExport = () => {

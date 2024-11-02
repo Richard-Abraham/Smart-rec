@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FacialRecognition from '../components/facial_recognition/facial-recognition'
 import TimeTracking from '../components/time_tracking/time-tracking'
 import RegistrationForm from '../components/registration/registration-form'
-import AttendanceAnalytics from '../components/analytics/attendance-analytics'
+import AttendanceAnalytics from '../components/analytics/attendancetable'
 import ReportsExport from '../components/analytics/reports-export'
 
 export default function Dashboard() {

@@ -1,12 +1,7 @@
 import React from 'react';
 import { Users, Clock, UserX } from 'lucide-react';
-import type { DashboardStats } from '../types';
 
-interface StatsProps {
-  stats: DashboardStats;
-}
-
-export function DashboardStats({ stats }: StatsProps) {
+export default function DashboardStats({ stats }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="bg-green-50 rounded-lg p-6 shadow">

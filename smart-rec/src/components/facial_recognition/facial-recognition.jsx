@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function FacialRecognition() {
   const [isDetecting, setIsDetecting] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     if (isDetecting && videoRef.current) {
@@ -19,7 +19,7 @@ export default function FacialRecognition() {
         })
         .catch(err => console.error("Error accessing camera:", err))
     } else if (!isDetecting && videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream
+      const stream = videoRef.current.srcObject;
       const tracks = stream.getTracks()
       tracks.forEach(track => track.stop())
     }
