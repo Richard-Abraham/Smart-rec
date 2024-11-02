@@ -13,23 +13,45 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path
-from attendanceSystem.auth import AuthService
-from attendanceSystem.face_recognition import FaceRecognitionService
-from attendanceSystem.attendance import AttendanceService
 from django.views.decorators.csrf import csrf_exempt
-from asgiref.sync import sync_to_async
-
-# Wrapper to call async methods
-async def async_view(view_func, *args, **kwargs):
-    return await sync_to_async(view_func)(*args, **kwargs)
+from .views import AuthView, FaceRecognitionView, AttendanceView
 
 urlpatterns = [
-    path('api/auth/sign-up', csrf_exempt(lambda request: async_view(AuthService.sign_up, request.POST)), name='sign-up'),
-    path('api/auth/sign-in', csrf_exempt(lambda request: async_view(AuthService.sign_in, request.POST)), name='sign-in'),
-    path('api/auth/sign-out', csrf_exempt(lambda request: async_view(AuthService.sign_out, request.POST)), name='sign-out'),
-    path('api/register-face', csrf_exempt(lambda request: async_view(FaceRecognitionService.register_face, request.POST)), name='register-face'),
-    path('api/attendance/today', csrf_exempt(lambda request: async_view(AttendanceService.get_today_records)), name='attendance'),
-    path('api/attendance/record', csrf_exempt(lambda request: async_view(AttendanceService.record_attendance, request.POST)), name="record-attendance")
+    path('api/auth/sign-up', 
+        csrf_exempt(AuthView.sign_up), 
+        name='sign-up'
+    ),
+    path('api/auth/sign-in', 
+        csrf_exempt(AuthView.sign_in), 
+        name='sign-in'
+    ),
+    path('api/auth/sign-out', 
+        csrf_exempt(AuthView.sign_out), 
+        name='sign-out'
+    ),
+    path('api/auth/profile/<str:user_id>', 
+        csrf_exempt(AuthView.get_user_profile), 
+        name='get-profile'
+    ),
+    path('api/auth/profile/update', 
+        csrf_exempt(AuthView.update_user_profile), 
+        name='update-profile'
+    ),
+    path('api/register-face', 
+        csrf_exempt(FaceRecognitionView.register_face), 
+        name='register-face'
+    ),
+    path('api/attendance/today', 
+        csrf_exempt(AttendanceView.get_today_records), 
+        name='attendance'
+    ),
+    path('api/attendance/record', 
+        csrf_exempt(AttendanceView.record_attendance), 
+        name='record-attendance'
+    ),
+    path('api/attendance/report', 
+        csrf_exempt(AttendanceView.get_attendance_report), 
+        name='attendance-report'
+    ),
 ]
