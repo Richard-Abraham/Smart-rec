@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.0",
+    "autoprefixer": "^10.4.20",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}
