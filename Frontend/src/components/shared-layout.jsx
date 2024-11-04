@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, Menu, User } from 'lucide-react'
 import { Button } from "../components/ui/button"
@@ -13,12 +13,22 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
 import { Input } from "../components/ui/input"
-import { useAuth } from '@/providers/AuthProvider'
+import { useAuth } from '../providers/AuthProvider'
 
 export default function SharedLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
   const { logout } = useAuth();
+  const [userEmail, setUserEmail] = useState('User');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user && user.email) {
+        setUserEmail(user.email);
+      }
+    }
+  }, []);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -126,7 +136,7 @@ export default function SharedLayout({ children }) {
                 <Button variant="ghost" className="flex items-center gap-2 hover:bg-accent/50">
                   <User className="h-5 w-5" />
                   <span className="hidden md:inline">
-                    {JSON.parse(localStorage.getItem('user'))?.email || 'User'}
+                    {userEmail}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>

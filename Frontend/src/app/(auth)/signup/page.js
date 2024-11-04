@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from '../../../components/ui/button'; // Adjust if necessary
+import { Input } from '../../../components/ui/input'; // Adjust if necessary
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'; // Adjust if necessary
+import { Alert, AlertDescription } from '../../../components/ui/alert'; // Adjust if necessary
 
 export default function Signup() {
   const router = useRouter();
