@@ -1,8 +1,8 @@
 'use client'
 
-import SharedLayout from '@/components/shared-layout'
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import SharedLayout from '../../components/shared-layout'
+import { Card, CardContent } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
 import { Search } from "lucide-react"
 
 const players = [

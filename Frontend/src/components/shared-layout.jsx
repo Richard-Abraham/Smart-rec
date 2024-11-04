@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, Menu, User } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import { Button } from "../components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +11,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+} from "../components/ui/dropdown-menu"
+import { Input } from "../components/ui/input"
 
 export default function SharedLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)

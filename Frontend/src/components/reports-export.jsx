@@ -3,22 +3,22 @@
 import { useState } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Search, Mail, Phone } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
+import { Button } from "../components/ui/button"
+import { Calendar } from "../components/ui/calendar"
+import { Input } from "../components/ui/input"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "../components/ui/card"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+} from "../components/ui/popover"
+import { cn } from "../lib/utils"
 
 // Sample player data
 const players = [
@@ -108,8 +108,8 @@ export default function ReportsExport() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="w-full max-w-lg mx-auto">
+    <div className="grid gap-6 max-w-6xl mx-auto">
+      <Card>
         <CardHeader>
           <CardTitle>Export Reports</CardTitle>
           <CardDescription>
@@ -151,7 +151,7 @@ export default function ReportsExport() {
         </CardContent>
       </Card>
 
-      <Card className="w-full">
+      <Card>
         <CardHeader>
           <CardTitle>Player Payment Reports</CardTitle>
           <CardDescription>
@@ -178,7 +178,7 @@ export default function ReportsExport() {
           {searchResults.length > 0 && (
             <div className="border rounded-lg divide-y">
               {searchResults.map(player => (
-                <div key={player.id} className="p-4 space-y-4">
+                <div key={player.id} className="p-4 hover:bg-muted/50 transition-colors">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold">{player.name}</h3>

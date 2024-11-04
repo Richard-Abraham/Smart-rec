@@ -2,21 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { Clock, Coffee } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 
 export default function TimeTracking() {
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [isOnBreak, setIsOnBreak] = useState(false)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState(null)
   const [checkInTime, setCheckInTime] = useState(null)
   const [totalTime, setTotalTime] = useState('00:00:00')
 
   useEffect(() => {
+    // Initialize currentTime after component mounts
+    setCurrentTime(new Date())
+    
     const timer = setInterval(() => {
       setCurrentTime(new Date())
       if (isCheckedIn && !isOnBreak && checkInTime) {
-        const diff = new Date() - checkInTime
+        const diff = new Date().getTime() - checkInTime.getTime()
         const hours = Math.floor(diff / 3600000).toString().padStart(2, '0')
         const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
         const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
@@ -38,6 +41,10 @@ export default function TimeTracking() {
     setIsOnBreak(false)
   }
 
+  if (!currentTime) {
+    return null // or a loading spinner
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -45,7 +52,7 @@ export default function TimeTracking() {
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-6">
         <div className="text-4xl font-mono">
-          {currentTime.toLocaleTimeString()}
+          {currentTime.toLocaleTimeString('en-US', { hour12: false })}
         </div>
         
         <div className="text-2xl font-mono text-gray-600">
@@ -75,7 +82,9 @@ export default function TimeTracking() {
 
         <div className="text-sm text-gray-500">
           {isCheckedIn ? (
-            isOnBreak ? 'Currently on break' : `Checked in at ${checkInTime?.toLocaleTimeString()}`
+            isOnBreak ? 'Currently on break' : (
+              checkInTime && `Checked in at ${checkInTime.toLocaleTimeString('en-US', { hour12: false })}`
+            )
           ) : 'Not checked in'}
         </div>
       </CardContent>

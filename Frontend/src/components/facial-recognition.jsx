@@ -2,8 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { Camera } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import Webcam from 'react-webcam'
 
 export default function FacialRecognition() {

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Dashboard</title>
+    <style>
+        body { max-width: 1200px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        .container { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-card { background: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #2196F3; }
+        .stat-label { color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f5f5f5; }
+        .filters { display: flex; gap: 10px; margin-bottom: 20px; }
+        select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1976D2; }
+        .chart-container { height: 300px; margin: 20px 0; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Attendance Dashboard</h1>
+
+    <!-- Period Selection -->
+    <div class="container">
+        <div class="filters">
+            <select id="periodSelect" onchange="loadHistory()">
+                <option value="week">Last Week</option>
+                <option value="month">Last Month</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="container">
+        <h2>Statistics</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalHours">0</div>
+                <div class="stat-label">Total Hours</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="attendanceRate">0%</div>
+                <div class="stat-label">Attendance Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lateDays">0</div>
+                <div class="stat-label">Late Days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="earlyDepartures">0</div>
+                <div class="stat-label">Early Departures</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Chart -->
+    <div class="container">
+        <h2>Attendance Hours</h2>
+        <div class="chart-container">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Attendance History -->
+    <div class="container">
+        <h2>Attendance History</h2>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Hours</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        let attendanceChart = null;
+
+        async function loadHistory() {
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+
+            const period = document.getElementById('periodSelect').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8000/api/attendance/history?period=${period}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStats(data.stats);
+                    updateChart(data.data);
+                    updateTable(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalHours').textContent = stats.total_hours;
+            document.getElementById('attendanceRate').textContent = `${stats.attendance_rate}%`;
+            document.getElementById('lateDays').textContent = stats.late_days;
+            document.getElementById('earlyDepartures').textContent = stats.early_departures;
+        }
+
+        function updateChart(data) {
+            const dates = data.map(record => new Date(record.check_in).toLocaleDateString());
+            const hours = data.map(record => {
+                if (record.check_out) {
+                    const checkIn = new Date(record.check_in);
+                    const checkOut = new Date(record.check_out);
+                    return ((checkOut - checkIn) / (1000 * 60 * 60)).toFixed(2);
+                }
+                return 0;
+            });
+
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            attendanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Hours Worked',
+                        data: hours,
+                        backgroundColor: '#2196F3'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.querySelector('#historyTable tbody');
+            tbody.innerHTML = '';
+
+            data.forEach(record => {
+                const row = document.createElement('tr');
+                const checkIn = new Date(record.check_in);
+                const checkOut = record.check_out ? new Date(record.check_out) : null;
+                const hours = checkOut ? ((checkOut - checkIn) / (1000 * 60 * 60)).toFixed(2) : '-';
+                
+                row.innerHTML = `
+                    <td>${checkIn.toLocaleDateString()}</td>
+                    <td>${checkIn.toLocaleTimeString()}</td>
+                    <td>${checkOut ? checkOut.toLocaleTimeString() : '-'}</td>
+                    <td>${hours}</td>
+                    <td>${record.status}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load initial data
+        loadHistory();
+    </script>
+</body>
+</html>

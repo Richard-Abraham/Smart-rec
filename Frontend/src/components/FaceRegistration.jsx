@@ -1,11 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState, useRef } from 'react'
 import Webcam from 'react-webcam'
 import { Camera, Loader2 } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { supabase } from '@/lib/supabase'
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
 
 export const FaceRegistration = () => {
@@ -23,36 +23,42 @@ export const FaceRegistration = () => {
             setProcessing(true)
             const imageSrc = webcamRef.current?.getScreenshot()
             if (!imageSrc) {
-                toast.error('Failed to capture image')
-                return
+                throw new Error('Failed to capture image from webcam')
             }
 
-            // Get current user
-            const { data: { user }, error: userError } = await supabase.auth.getUser()
-            if (userError) throw userError
+            const blob = await fetch(imageSrc).then(r => r.blob())
+            const fileName = `face_${Date.now()}.jpg`
 
-            // Upload photo to storage
-            const fileName = `${user.id}/${Date.now()}.jpg`
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('face-photos')
-                .upload(fileName, base64ToBlob(imageSrc), {
+                .upload(fileName, blob, {
                     contentType: 'image/jpeg',
-                    upsert: true
+                    cacheControl: '3600'
                 })
+
             if (uploadError) throw uploadError
 
-            // Get public URL for the uploaded photo
             const { data: { publicUrl } } = supabase.storage
                 .from('face-photos')
                 .getPublicUrl(fileName)
 
-            // Create face encoding record
-            const { data: faceData, error: faceError } = await supabase
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+            if (sessionError) {
+                throw new Error('Authentication required')
+            }
+            
+            const userId = session?.user?.id
+            if (!userId) {
+                throw new Error('User not authenticated')
+            }
+
+            const { error: faceError } = await supabase
                 .from('face_encodings')
                 .insert({
-                    user_id: user.id,
+                    user_id: userId,
                     photo_url: publicUrl,
-                    is_active: true
+                    is_active: true,
+                    encoding: null
                 })
                 .select()
                 .single()
@@ -60,27 +66,14 @@ export const FaceRegistration = () => {
             if (faceError) throw faceError
 
             toast.success('Face registered successfully!')
+            setRegistering(false)
         } catch (error) {
             console.error('Registration error:', error)
             toast.error(error.message || 'Failed to register face')
+            setRegistering(false)
         } finally {
             setProcessing(false)
-            setRegistering(false)
         }
-    }
-
-    // Helper function to convert base64 to blob
-    const base64ToBlob = (base64) => {
-        const byteString = atob(base64.split(',')[1])
-        const mimeString = base64.split(',')[0].split(':')[1].split(';')[0]
-        const ab = new ArrayBuffer(byteString.length)
-        const ia = new Uint8Array(ab)
-        
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i)
-        }
-        
-        return new Blob([ab], { type: mimeString })
     }
 
     return (
@@ -88,7 +81,7 @@ export const FaceRegistration = () => {
             <CardHeader>
                 <CardTitle className="text-2xl font-bold">Face Registration</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                    Register your face for attendance tracking
+                    Position your face in the frame and click capture
                 </p>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-6">

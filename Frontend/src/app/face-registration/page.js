@@ -1,7 +1,7 @@
 'use client'
 
-import SharedLayout from '@/components/shared-layout'
-import { FaceRegistration } from '@/components/FaceRegistration'
+import SharedLayout from '../../components/shared-layout'
+import { FaceRegistration } from '../../components/FaceRegistration'
 
 export default function FaceRegistrationPage() {
   return (

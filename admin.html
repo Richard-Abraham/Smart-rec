@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        /* ... (previous styles) ... */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .employee-list { max-height: 400px; overflow-y: auto; }
+        .employee-card { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .tab.active { background: #2196F3; color: white; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showPanel('overview')">Overview</div>
+        <div class="tab" onclick="showPanel('employees')">Employees</div>
+        <div class="tab" onclick="showPanel('settings')">Settings</div>
+    </div>
+
+    <div id="overview" class="panel active">
+        <div class="grid">
+            <div class="card">
+                <h3>Today's Statistics</h3>
+                <div id="todayStats"></div>
+            </div>
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="recentActivity"></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Attendance Trends</h3>
+            <canvas id="trendsChart"></canvas>
+        </div>
+        <div class="card">
+            <h3>Export Reports</h3>
+            <form id="reportForm">
+                <div class="form-group">
+                    <label>Start Date:</label>
+                    <input type="date" name="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date:</label>
+                    <input type="date" name="endDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Report Type:</label>
+                    <select name="reportType">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Format:</label>
+                    <select name="format">
+                        <option value="excel">Excel</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+                <button type="submit">Generate Report</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="employees" class="panel">
+        <div class="card">
+            <h3>Employee Management</h3>
+            <div class="employee-list" id="employeeList"></div>
+        </div>
+    </div>
+
+    <div id="settings" class="panel">
+        <div class="card">
+            <h3>System Settings</h3>
+            <form id="settingsForm">
+                <h4>Work Hours</h4>
+                <div>
+                    <label>Start Time:</label>
+                    <input type="time" name="workStart" value="09:00">
+                </div>
+                <div>
+                    <label>End Time:</label>
+                    <input type="time" name="workEnd" value="17:00">
+                </div>
+                <div>
+                    <label>Grace Period (minutes):</label>
+                    <input type="number" name="gracePeriod" value="15">
+                </div>
+                
+                <h4>Notifications</h4>
+                <div>
+                    <label>
+                        <input type="checkbox" name="emailNotifications" checked>
+                        Enable Email Notifications
+                    </label>
+                </div>
+                <div>
+                    <label>Late Threshold (minutes):</label>
+                    <input type="number" name="lateThreshold" value="15">
+                </div>
+                
+                <button type="submit">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('http://localhost:8000/api/admin/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    updateStats(data.stats);
+                    updateRecentActivity(data.recent_attendance);
+                    updateTrendsChart(data.stats);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadEmployees() {
+            try {
+                const response = await fetch('http://localhost:8000/api/admin/employees', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    updateEmployeeList(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading employees:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('todayStats').innerHTML = `
+                <div class="stat-grid">
+                    <div class="stat">
+                        <div class="stat-value">${stats.total_employees}</div>
+                        <div class="stat-label">Total Employees</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${stats.total_hours}</div>
+                        <div class="stat-label">Total Hours</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${stats.late_arrivals}</div>
+                        <div class="stat-label">Late Arrivals</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateRecentActivity(activity) {
+            const html = activity.map(record => `
+                <div class="activity-item">
+                    <div class="activity-time">${new Date(record.check_in).toLocaleTimeString()}</div>
+                    <div class="activity-user">${record.profiles.full_name}</div>
+                    <div class="activity-type">${record.check_out ? 'Checked Out' : 'Checked In'}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('recentActivity').innerHTML = html;
+        }
+
+        function updateEmployeeList(employees) {
+            const html = employees.map(employee => `
+                <div class="employee-card">
+                    <div>
+                        <div class="employee-name">${employee.full_name}</div>
+                        <div class="employee-email">${employee.email}</div>
+                    </div>
+                    <div>
+                        <button onclick="toggleAdmin('${employee.id}', ${!employee.admin_roles})">${employee.admin_roles ? 'Remove Admin' : 'Make Admin'}</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('employeeList').innerHTML = html;
+        }
+
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(panelId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function toggleAdmin(userId, makeAdmin) {
+            try {
+                const response = await fetch('http://localhost:8000/api/admin/employees', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: makeAdmin ? 'make_admin' : 'remove_admin',
+                        user_id: userId
+                    })
+                });
+                
+                if (response.ok) {
+                    loadEmployees();
+                }
+            } catch (error) {
+                console.error('Error toggling admin:', error);
+            }
+        }
+
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const params = new URLSearchParams({
+                start_date: formData.get('startDate'),
+                end_date: formData.get('endDate'),
+                type: formData.get('reportType'),
+                format: formData.get('format')
+            });
+            
+            try {
+                const response = await fetch(`http://localhost:8000/api/reports/detailed?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `attendance_report_${formData.get('reportType')}.${formData.get('format')}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating report');
+            }
+        });
+
+        // Load initial data
+        loadDashboard();
+        loadEmployees();
+    </script>
+</body>
+</html>

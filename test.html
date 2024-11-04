@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition Test</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        .container { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .response { white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+        #videoElement { width: 100%; max-width: 640px; margin: 10px 0; }
+        .camera-container { text-align: center; }
+        .button-group { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Face Recognition Test</h1>
+
+    <!-- Login Section -->
+    <div class="container">
+        <h2>1. Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <div id="loginResponse" class="response"></div>
+    </div>
+
+    <!-- Camera Section -->
+    <div class="container camera-container">
+        <h2>2. Camera Control</h2>
+        <video id="videoElement" autoplay playsinline></video>
+        <div class="button-group">
+            <button onclick="startCamera()">Start Camera</button>
+            <button onclick="stopCamera()">Stop Camera</button>
+        </div>
+    </div>
+
+    <!-- Face Registration -->
+    <div class="container">
+        <h2>3. Face Registration</h2>
+        <button onclick="captureAndRegister()">Register Face</button>
+        <div id="registerResponse" class="response"></div>
+    </div>
+
+    <!-- Face Verification -->
+    <div class="container">
+        <h2>4. Face Verification</h2>
+        <button onclick="verifyFace()">Verify Face</button>
+        <div id="verifyResponse" class="response"></div>
+    </div>
+
+    <!-- Add this after the Face Verification section -->
+    <div class="container">
+        <h2>5. Attendance</h2>
+        <button onclick="checkIn()">Check In</button>
+        <button onclick="checkOut()">Check Out</button>
+        <div id="attendanceResponse" class="response"></div>
+    </div>
+
+    <script>
+        let token = '';
+        let video = document.getElementById('videoElement');
+        let stream = null;
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/sign-in', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResponse').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.token) {
+                    token = data.token;
+                    alert('Login successful!');
+                }
+            } catch (error) {
+                document.getElementById('loginResponse').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    }
+                });
+                video.srcObject = stream;
+            } catch (error) {
+                alert('Error accessing camera: ' + error.message);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        async function captureAndRegister() {
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+
+            if (!stream) {
+                alert('Please start the camera first!');
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                const imageData = canvas.toDataURL('image/jpeg');
+
+                const response = await fetch('http://localhost:8000/api/register-face', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                document.getElementById('registerResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('registerResponse').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyFace() {
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+
+            if (!stream) {
+                alert('Please start the camera first!');
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                const imageData = canvas.toDataURL('image/jpeg');
+
+                const response = await fetch('http://localhost:8000/api/verify-face', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                document.getElementById('verifyResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('verifyResponse').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkIn() {
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+
+            if (!stream) {
+                alert('Please start the camera first!');
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                const imageData = canvas.toDataURL('image/jpeg');
+
+                const response = await fetch('http://localhost:8000/api/check-in', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                const responseElement = document.getElementById('attendanceResponse');
+                responseElement.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    responseElement.classList.add('success');
+                    alert('Check-in successful!');
+                } else {
+                    responseElement.classList.add('error');
+                }
+            } catch (error) {
+                document.getElementById('attendanceResponse').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkOut() {
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+
+            if (!stream) {
+                alert('Please start the camera first!');
+                return;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                const imageData = canvas.toDataURL('image/jpeg');
+
+                const response = await fetch('http://localhost:8000/api/check-out', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                const responseElement = document.getElementById('attendanceResponse');
+                responseElement.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    responseElement.classList.add('success');
+                    alert('Check-out successful!');
+                } else {
+                    responseElement.classList.add('error');
+                }
+            } catch (error) {
+                document.getElementById('attendanceResponse').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

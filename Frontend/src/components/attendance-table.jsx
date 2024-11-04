@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "../components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 
 export default function AttendanceTable() {
   // Sample data - replace with your actual data

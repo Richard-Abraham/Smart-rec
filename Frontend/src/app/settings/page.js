@@ -1,10 +1,10 @@
 'use client'
 
-import SharedLayout from '@/components/shared-layout'
+import SharedLayout from '../../components/shared-layout'
 import { useTheme } from "next-themes"
 import { Moon, Sun } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 
 export default function Settings() {
   const { theme, setTheme } = useTheme()

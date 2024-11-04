@@ -18,7 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .jwt import SupabaseAuthentication
-from .views import AuthView, FaceRecognitionView, AttendanceView
+from .views import AuthView, FaceRecognitionView, AttendanceView, AdminView, ReportView
 
 # Authentication decorator
 def auth_required(view_func):
@@ -59,5 +59,37 @@ urlpatterns = [
     path('api/attendance/report', 
         csrf_exempt(auth_required(AttendanceView.get_attendance_report)), 
         name='attendance-report'
+    ),
+    path('api/verify-face', 
+        csrf_exempt(auth_required(FaceRecognitionView.verify_face)), 
+        name='verify-face'
+    ),
+    path('api/check-in', 
+        csrf_exempt(auth_required(AttendanceView.check_in)), 
+        name='check-in'
+    ),
+    path('api/check-out', 
+        csrf_exempt(auth_required(AttendanceView.check_out)), 
+        name='check-out'
+    ),
+    path('api/attendance/history', 
+        csrf_exempt(auth_required(AttendanceView.get_history)), 
+        name='attendance-history'
+    ),
+    path('api/attendance/report', 
+        csrf_exempt(auth_required(AttendanceView.get_report)), 
+        name='attendance-report'
+    ),
+    path('api/admin/dashboard', 
+        csrf_exempt(AdminView.get_dashboard_stats), 
+        name='admin-dashboard'
+    ),
+    path('api/admin/employees', 
+        csrf_exempt(AdminView.manage_employees), 
+        name='manage-employees'
+    ),
+    path('api/reports/detailed', 
+        csrf_exempt(auth_required(ReportView.generate_detailed_report)), 
+        name='detailed-report'
     ),
 ]
