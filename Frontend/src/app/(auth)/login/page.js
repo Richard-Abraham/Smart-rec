@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/providers/AuthProvider';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,12 +24,6 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch('http://localhost:8000/api/auth/sign-in', {
         method: 'POST',
@@ -36,14 +34,10 @@ export default function Login() {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
 
       if (data.token) {
-        localStorage.setItem('authToken', data.token);
+        login(data.token);
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
@@ -52,76 +46,65 @@ export default function Login() {
         setError(data.error || 'Invalid credentials');
       }
     } catch (err) {
-      setError(
-        err.message === 'Failed to fetch' 
-          ? 'Unable to connect to the server. Please check your internet connection.'
-          : 'An error occurred during login'
-      );
+      setError('An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-          <div className="space-y-4 rounded-md shadow-sm">
-            <div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <Input
-                id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
-                required
-                placeholder="Email address"
+                placeholder="Email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Input
-                id="password"
-                name="password"
                 type="password"
-                autoComplete="current-password"
-                required
                 placeholder="Password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
               />
             </div>
-          </div>
-
-          <div>
-            <Button
-              type="submit"
+            <Button 
+              type="submit" 
               className="w-full"
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            Don't have an account?{' '}
+            <Link 
+              href="/signup" 
+              className="text-primary hover:underline"
+            >
+              Sign up
+            </Link>
           </div>
-        </form>
-        <div className="text-center text-sm">
-          <Link 
-            href="/signup" 
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            Don&apos;t have an account? Sign up
-          </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

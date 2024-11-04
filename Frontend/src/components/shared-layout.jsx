@@ -13,10 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu"
 import { Input } from "../components/ui/input"
+import { useAuth } from '@/providers/AuthProvider'
 
 export default function SharedLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
+  const { logout } = useAuth();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -123,16 +125,24 @@ export default function SharedLayout({ children }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 hover:bg-accent/50">
                   <User className="h-5 w-5" />
-                  <span className="hidden md:inline">Admin</span>
+                  <span className="hidden md:inline">
+                    {JSON.parse(localStorage.getItem('user'))?.email || 'User'}
+                  </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => {
+                    logout();
+                  }}
+                >
+                  Logout
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
