@@ -5,6 +5,7 @@ import Webcam from 'react-webcam'
 import { Camera, Loader2 } from 'lucide-react'
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
 
@@ -12,6 +13,7 @@ export const FaceRegistration = () => {
     const webcamRef = useRef(null)
     const [registering, setRegistering] = useState(false)
     const [processing, setProcessing] = useState(false)
+    const [token, setToken] = useState('');
 
     const handleRegistration = async () => {
         if (!registering) {
@@ -29,41 +31,32 @@ export const FaceRegistration = () => {
             const blob = await fetch(imageSrc).then(r => r.blob())
             const fileName = `face_${Date.now()}.jpg`
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('face-photos')
-                .upload(fileName, blob, {
-                    contentType: 'image/jpeg',
-                    cacheControl: '3600'
-                })
-
-            if (uploadError) throw uploadError
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('face-photos')
-                .getPublicUrl(fileName)
-
             const { data: { session }, error: sessionError } = await supabase.auth.getSession()
             if (sessionError) {
                 throw new Error('Authentication required')
             }
-            
+
             const userId = session?.user?.id
             if (!userId) {
                 throw new Error('User not authenticated')
             }
 
-            const { error: faceError } = await supabase
-                .from('face_encodings')
-                .insert({
-                    user_id: userId,
-                    photo_url: publicUrl,
-                    is_active: true,
-                    encoding: null
-                })
-                .select()
-                .single()
+            const formData = new FormData()
+            formData.append('file', blob, fileName)
+            formData.append('userId', userId)
 
-            if (faceError) throw faceError
+            const response = await fetch('http://your-backend-url/api/register-face', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData,
+            })
+
+            const result = await response.json()
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to register face')
+            }
 
             toast.success('Face registered successfully!')
             setRegistering(false)
@@ -92,7 +85,7 @@ export const FaceRegistration = () => {
                             audio={false}
                             screenshotFormat="image/jpeg"
                             className="w-full h-full object-cover"
-                            mirrored
+                            mirrored={false}
                         />
                     ) : (
                         <div className="flex items-center justify-center h-full">
